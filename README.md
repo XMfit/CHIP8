@@ -5,7 +5,8 @@ my understanding of C and emulators.
 # Requirements
 - SDL Library
 - C
-I created this code on a Debian based linux system
+
+Compiled on `Ubuntu 24.04` with `gcc version 13.3.0`
 
 # Buildings 
 TBA
