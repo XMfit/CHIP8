@@ -1,38 +1,4 @@
-#include <stdint.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
-#include <sys/types.h>
-
-// Memory: 4kb (4096 bytes)
-uint8_t memory[4096];
-
-// Special Registers 
-uint16_t pc;            // Program counter 
-uint16_t I;             // Points to memory locations 
-
-// Timer Registers
-typedef enum {
-    dt, st,         // dt - delay timer, st - start timer
-    NUM_OF_TIMERS
-} TimerRegs;
-
-// General Purpose Registers 
-typedef enum {
-    V0, V1, V2, V3, V4, V5, V6, V7, V8, V9,
-    VA, VB, VC, VD, VE, VF,     // VF - flag register
-    NUM_OF_REGISTERS
-} Registers;
-
-uint8_t registers[NUM_OF_REGISTERS]; // 16 8-bit registers 
-uint8_t timers[NUM_OF_TIMERS];       // 2 8-bit timers
-
-// Stack: 16 two-byte entries. Stack may be limited or unlimited 
-uint16_t stack[16];
-uint16_t sp;
-
-// Keypad
-uint8_t keypad[16];
+#include "../include/chip8.h"
 
 // Font: 4px X 5px. Stored in memory from 000 - 1FF. Popular at 050 - 09F
 uint8_t fontset[80] = {
@@ -54,14 +20,24 @@ uint8_t fontset[80] = {
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
-// Display: 64 px * 32px. Each pixel can be on or off and is a boolean value
-bool display[64 * 32];
+uint8_t memory[4096];
+uint16_t pc; 
+uint16_t I;
+uint8_t registers[NUM_OF_REGISTERS];
+
+uint8_t timer_registers[NUM_OF_TIMERS];
+uint16_t stack[16];
+uint16_t sp;
+
+uint8_t keypad[16]; 
+bool display[64 * 32]; 
+
 
 void initChip() {
     memset(memory, 0, sizeof(memory));
     memset(stack, 0, sizeof(stack));
     memset(registers, 0, sizeof(registers));
-    memset(timers, 0, sizeof(timers));
+    memset(timer_registers, 0, sizeof(timer_registers));
     memset(display, 0, 64 * 32);
     
     pc = 0x200;
@@ -71,11 +47,31 @@ void initChip() {
     memset(keypad, 0, sizeof(keypad));
     memset(display, 0, sizeof(display));
     // load fonts 
-    memcpy(memory, fontset, sizeof(fontset));
+    memcpy(memory + 0x50, fontset, sizeof(fontset));
+    printf("Chip Initialized\n");
 }
 
-int main(void) {
-    printf("Hello World!\n");
+int loadRom(char *filename) {
+    FILE* f = fopen(filename, "rb");
+    if (!f) {
+        fprintf(stderr, "Error opening ROM file\n");
+        return 1;
+    }
+
+    struct stat file_stat;              // Used to grab info on file
+    stat(filename, &file_stat);         
+    size_t fsize = file_stat.st_size;   // Grab size of rom
+
+    // Read binary data into memory starting at address 0x200 
+    size_t read_elements = fread(memory + 0x200, 1, sizeof(memory) - 0x200, f);
+    
+    fclose(f);
+
+    // check read elements equals size of file in bytes
+    if (read_elements != fsize) {
+        fprintf(stderr, "Error: unable to load ROM into available memory");
+        return 1;
+    }
     return 0;
 }
 
