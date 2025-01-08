@@ -1,15 +1,40 @@
 #include "../include/chip8.h"
 #include "../include/sdl_utils.h"
+#include <limits.h>
 #include <unistd.h>
+#include <errno.h>
 
 int main(int argc, char** argv) {
     if (argc != 2) {
         fprintf(stderr, "Incorrect amount of arguments: ./main <rom>\n");
         return 1;
     }
+
+    char buffer[100];
+    char *endptr;
+    int flag;
+    long temp;
+
+    printf("Enter legacy flag: <1> for legacy <0> for modern: ");
+    if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
+        fprintf(stderr, "Error reading input\n");
+        exit(EXIT_FAILURE);
+    }
+
+    buffer[strcspn(buffer, "\n")] = '\0';
+
+    errno = 0;
+    temp = strtol(buffer, &endptr, 10);
+
+    if (errno != 0 || *endptr != '\0' || temp > INT_MAX || temp < INT_MIN) {
+        fprintf(stderr, "Invalid input. Please enter valid integer.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    flag = (int)temp;
     
     // Init chip and load rom into memory
-    initChip();
+    initChip(flag);
     if (loadRom(argv[1])) {
         fprintf(stderr, "Error loading ROM file\n");
         exit(EXIT_FAILURE);
@@ -30,7 +55,7 @@ int main(int argc, char** argv) {
         if (df) {
             sdl_draw(display);
         }
-        usleep(1000);
+        usleep(1500);
     }
 
     cleanup_sdl();

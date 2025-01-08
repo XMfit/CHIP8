@@ -8,6 +8,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+extern int legacy_flag;
+
 extern uint8_t memory[4096];
 extern uint16_t pc;
 extern uint16_t I;
@@ -34,7 +36,7 @@ extern uint16_t sp;
 
 // Flags
 extern uint8_t df; 
-extern uint8_t sf; 
+extern uint8_t sf;
 
 // Keypad
 extern uint8_t keypad[16];
@@ -43,7 +45,7 @@ extern uint8_t keypad[16];
 extern uint8_t display[64 * 32];
 
 // Function Declarations
-void initChip();
+void initChip(int);
 int loadRom(char *);
 void emulation_cycle();
 

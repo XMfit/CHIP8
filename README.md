@@ -9,10 +9,12 @@ my understanding of C and emulators.
 Compiled on `Ubuntu 24.04` with `gcc version 13.3.0`
 
 ## Buildings 
-TBA
+`make all`
+
+`make clean`
 
 ## Usage 
-TBA 
+`./bin/emulator <filepath to rom>` 
 
 ## Documentation & Resources Used:
 Indepth article on architecture

@@ -21,6 +21,8 @@ uint8_t fontset[80] = {
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
+int legacy_flag;
+
 uint8_t memory[4096];
 uint16_t pc; 
 uint16_t I;
@@ -37,7 +39,8 @@ uint8_t keypad[16];
 uint8_t display[64 * 32]; 
 
 
-void initChip() {
+void initChip(int flag) {
+    legacy_flag = flag; 
     memset(memory, 0, sizeof(memory));
     memset(stack, 0, sizeof(stack));
     memset(registers, 0, sizeof(registers));
@@ -99,10 +102,11 @@ void emulation_cycle() {
                     for (int i = 0; i < 64 * 32; i++)
                         display[i] = 0;
                     pc += 2;
-                    printf("Cleared\n");
                     break;
                 case 0xEE: // return from subroutine 
-                    // code 
+                    pc = stack[sp];
+                    sp--;
+                    pc += 2;
                     break;
                 default: 
                     // Other 0x0XXX case 
@@ -114,60 +118,113 @@ void emulation_cycle() {
             pc = (opcode & 0x0FFF); 
             break;
         case 0x2000:
-            // 0x2nnn
+            // 0x2nnn Call addr 
+            sp++; 
+            stack[sp] = pc; 
+            pc = (opcode & 0x0FFF);
             break;
         case 0x3000:
-            // 0x3xkk
+            // 0x3xkk SE registers[Vx], byte 
+            if (registers[Vx] == (opcode & 0x00FF))
+                pc += 2;
+            pc += 2;
             break;
         case 0x4000:
-            // 0x4xkk 
+            // 0x4xkk SNE registers[Vx], byte
+            if (registers[Vx] != (opcode & 0x00FF))
+                pc += 2;
+            pc += 2;
             break;
         case 0x5000:
-            // 0x5xy0 
+            // 0x5xy0 SE registers[Vx], registers[Vy]
+            if (registers[Vx] == registers[Vy])
+                pc += 2;
+            pc += 2;
             break;
         case 0x6000:
-            // 0x6xkk set register VX 
+            // 0x6xkk set register registers[Vx] 
             registers[Vx] = (opcode & 0x00FF);
             pc += 2;
             break;
         case 0x7000:
-            // 0x7xkk add value to register vx
+            // 0x7xkk add value to register registers[Vx]
             registers[Vx] += (opcode & 0x00FF); 
             pc += 2;
             break;
         case 0x8000:
             switch (opcode & 0x000F) {
                 case 0x0:
-                    // 0x8xy0
+                    // 0x8xy0 LD registers[Vx], registers[Vy]
+                    registers[Vx] = registers[Vy];
+                    pc += 2;
                     break;
                 case 0x1:
-                    // 0x8xy1
+                    // 0x8xy1 OR registers[Vx], registers[Vy]
+                    registers[Vx] = (registers[Vx] | registers[Vy]);
+                    pc += 2;
                     break;
                 case 0x2:
-                    // 0x8xy2
+                    // 0x8xy2 AND registers[Vx], registers[Vy]
+                    registers[Vx] = (registers[Vx] & registers[Vy]);
+                    pc += 2;
                     break;
                 case 0x3:
-                    // 0x8xy3
+                    // 0x8xy3 XOR, registers[Vx], registers[Vy]
+                    registers[Vx] = (registers[Vx] ^ registers[Vy]);
+                    pc += 2;
                     break;
                 case 0x4:
-                    // 0x8xy4
+                    // 0x8xy4 ADD registers[Vx], registers[Vy]
+                    if (registers[Vx] + registers[Vy] > 0xFF)
+                        registers[VF] = 1;
+                    else
+                        registers[VF] = 0;
+                    registers[Vx] += registers[Vy];
+                    pc += 2;
                     break;
                 case 0x5:
-                    // 0x8xy5  
+                    // 0x8xy5  SUB registers[Vx], registers[Vy] 
+                    if (registers[Vx] > registers[Vy])
+                        registers[VF] = 1;
+                    else
+                        registers[VF] = 0;
+                    registers[Vx] = registers[Vx] - registers[Vy];
+                    pc += 2;
                     break;
                 case 0x6:
-                    // 0x8xy6
+                    // 0x8xy6 SHR registers[Vx] {, registers[Vy]}
+                    if (legacy_flag) {
+                        registers[Vx] = registers[Vy];
+                    }
+                    registers[0xF] = registers[Vx] & 0x1;
+                    registers[Vx] >>= 1;
+                    pc += 2;
                     break;
                 case 0x7:
-                    // 0x8xy7
+                    // 0x8xy7 SUBN registers[Vx], registers[Vy]
+                    if (registers[Vy] > registers[Vx])
+                        registers[VF] = 1;
+                    else
+                        registers[VF] = 0;
+                    registers[Vx] = registers[Vy] - registers[Vx];
+                    pc += 2;
                     break;
                 case 0xE:
-                    // 0x8xye
+                    // 0x8xye SHL registers[Vx] {, registers[Vy]}
+                    if (legacy_flag) {
+                        registers[Vx] = registers[Vy];
+                    }
+                    registers[VF] = (registers[Vx] & 0x80) >> 7;
+                    registers[Vx] <<= 1;
+                    pc += 2;
                     break;
             }
             break;
         case 0x9000:
-            // 0x9xy0
+            // 0x9xy0 SNE registers[Vx], registers[Vy]
+            if (registers[Vx] != registers[Vy])
+                pc += 2;
+            pc += 2;
             break;
         case 0xA000:
             // 0xAnnn set value of register I to nnn 
@@ -175,13 +232,16 @@ void emulation_cycle() {
             pc += 2;
             break;
         case 0xB000:
-            // 0xBnnn
+            // 0xBnnn JP, V0, addr 
+            pc = (opcode & 0x0FFF) + registers[V0]; 
             break;
         case 0xC000:
-            // 0xCxkk
+            // 0xCxkk RND, registers[Vx], byte
+            registers[Vx] = (rand() % 256) & (opcode & 0x00FF);
+            pc += 2;
             break;
         case 0xD000:
-            // 0xDxyn DRW Vx, Vy, nibble 
+            // 0xDxyn DRW registers[Vx], registers[Vy], nibble 
             df = 1;
 
             uint16_t height = (opcode & 0x000F);
@@ -193,8 +253,8 @@ void emulation_cycle() {
                 px = memory[I + yline];
                 for (int xline = 0; xline < 8; xline++) {
                     if ((px & (0x80 >> xline)) != 0) {
-                        int screen_x = registers[Vx] + xline;
-                        int screen_y = registers[Vy] + yline;
+                        int screen_x = (registers[Vx] + xline) % 64;
+                        int screen_y = (registers[Vy] + yline) % 32;
                         int pixel_index = screen_x + (screen_y * 64);
                         
                         if (display[pixel_index] == 1)
@@ -209,33 +269,85 @@ void emulation_cycle() {
         case 0xE000:
             switch (opcode & 0x00FF) {
                 case 0x9E:
+                    // Ex9E Skip registers[Vx]
+                    if (keypad[registers[Vx]])
+                        pc += 2;
+                    pc += 2;
                     break;
                 case 0xA1:
+                    // ExAI SKNP registers[Vx]
+                    if (!keypad[registers[Vx]])
+                        pc += 2;
+                    pc += 2;
                     break;
             }
             break;
         case 0xF000:
             switch (opcode & 0x00FF) {
                 case 0x07:
+                    // Fx07 Ld registers[Vx], DT
+                    registers[Vx] = timer_registers[dt];
+                    pc += 2;
                     break;
                 case 0x0A:
+                    // Fx0A LD registers[Vx], K
+                    for (int i = 0; i < 16; i++) {
+                        if(keypad[i]) {
+                            registers[Vx] = i;
+                            pc += 2;
+                            break;
+                        }
+                    }
                     break;
                 case 0x15:
+                    // Fx15 LD DT, registers[Vx]
+                    timer_registers[dt] = registers[Vx];
+                    pc += 2;
                     break;
                 case 0x18:
+                    // Fx18 LD St, registers[Vx]
+                    timer_registers[st] = registers[Vx];
+                    pc += 2;
                     break;
                 case 0x1E:
+                    // Fx1E ADD I, registers[Vx] 
+                    I = I + registers[Vx];
+                    pc += 2;
                     break;
                 case 0x29:
+                    // Fx29 LD F, registers[Vx]
+                    I = registers[Vx] * 5;
+                    pc += 2;
                     break;
                 case 0x33:
+                    // Fx33 LD B, registers[Vx]
+                    memory[I] = registers[Vx] / 100;
+                    memory[I + 1] = registers[Vx] / 10;
+                    memory[I + 2] = registers[Vx] % 10;
+                    pc += 2;
                     break;
                 case 0x55:
+                    // Fx55 LD [i] registers[Vx]
+                    for (int i = 0; i <= Vx; i++)
+                        memory[I + i] = registers[i];
+                    pc += 2;
                     break;
                 case 0x65:
+                    // Fx65 LD registers[Vx], [I]
+                    for (int i = 0; i <= Vx; i++)
+                        registers[i] = memory[I + i];
+                    pc += 2;
                     break;
             }
             break;
     }
+
+    if (timer_registers[dt] > 0)
+        timer_registers[dt] -= 1;
+    if (timer_registers[st] > 0) {
+        // sound 
+        timer_registers[st] -= 1;
+    }
+
 }
 
