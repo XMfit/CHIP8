@@ -1,4 +1,3 @@
-- Maybe break chip.8 into a header, and source file
-- Begin fetch / decode / execution loop
-- Test basic roms like 'chip-8 ibm logo'
+- Finish opp codes
+- Figure out how to make audio work
 

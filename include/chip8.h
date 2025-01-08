@@ -32,15 +32,20 @@ extern uint8_t timer_registers[NUM_OF_TIMERS];       // 2 8-bit timers
 extern uint16_t stack[16];
 extern uint16_t sp;
 
+// Flags
+extern uint8_t df; 
+extern uint8_t sf; 
+
 // Keypad
 extern uint8_t keypad[16];
 
 // Display: 64 px * 32px. Each pixel can be on or off and is a boolean value
-extern bool display[64 * 32];
+extern uint8_t display[64 * 32];
 
 // Function Declarations
 void initChip();
 int loadRom(char *);
+void emulation_cycle();
 
 #endif
 
