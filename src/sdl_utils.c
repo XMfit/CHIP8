@@ -1,16 +1,17 @@
 #include "../include/sdl_utils.h"
+#include <SDL2/SDL_events.h>
 #include <SDL2/SDL_render.h>
+#include <SDL2/SDL_scancode.h>
 #include <stdint.h>
 
 SDL_Window *window;
 SDL_Renderer * renderer; 
 
-
 SDL_Scancode keymaps[16] = {
-    SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_3, SDL_SCANCODE_4, 
-    SDL_SCANCODE_Q, SDL_SCANCODE_W, SDL_SCANCODE_E, SDL_SCANCODE_R,
-    SDL_SCANCODE_A, SDL_SCANCODE_S, SDL_SCANCODE_D, SDL_SCANCODE_F,
-    SDL_SCANCODE_Z, SDL_SCANCODE_X, SDL_SCANCODE_C, SDL_SCANCODE_V,
+    SDL_SCANCODE_X, SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_3, 
+    SDL_SCANCODE_Q, SDL_SCANCODE_W, SDL_SCANCODE_E, SDL_SCANCODE_A,
+    SDL_SCANCODE_S, SDL_SCANCODE_D, SDL_SCANCODE_Z, SDL_SCANCODE_C,
+    SDL_SCANCODE_4, SDL_SCANCODE_R, SDL_SCANCODE_F, SDL_SCANCODE_V,
 };
 
 int quit_signal = 0;
@@ -43,32 +44,46 @@ int init_display() {
     return 0;
 }
 
-void sdl_ehandler(uint8_t * keypad) {
+void sdl_ehandler(uint8_t *keypad) {
     SDL_Event event;
+
     // if event executes code
     if (SDL_PollEvent(&event)) {
-        // grabs state of every key 
-        const Uint8 *state = SDL_GetKeyboardState(NULL);
-        // check event type 
+        // check event type
         switch (event.type) {
             case SDL_QUIT:
                 printf("Quit Emulator\n");
                 quit_signal = 1;
                 break;
-            default:  // if exit isnt called
-                if (state[SDL_SCANCODE_ESCAPE]) {
+
+            case SDL_KEYDOWN:
+                for (int i = 0; i < 16; i++) {
+                    // Check if the pressed key matches one of the keymaps
+                    if (event.key.keysym.scancode == keymaps[i]) {
+                        keypad[i] = 1;
+                        break;
+                    }
+                }
+                if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
                     quit_signal = 1;
                 }
-                // if 'esc' isnt pressed update our
-                // keypad by checking and assigning state values
-                for (int key = 0; key < 16; key++) {
-                    keypad[key] = state[keymaps[key]];
+                break;
+
+            case SDL_KEYUP:
+                for (int i = 0; i < 16; i++) {
+                    // Check if the released key matches one of the keymaps
+                    if (event.key.keysym.scancode == keymaps[i]) {
+                        keypad[i] = 0;
+                        break;
+                    }
                 }
+                break;
+
+            default:
                 break;
         }
     }
 }
-
 
 void sdl_draw(uint8_t *display) {
     // Clear screen
