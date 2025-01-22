@@ -7,6 +7,9 @@
 SDL_Window *window;
 SDL_Renderer * renderer; 
 
+bool debugger_enabled;
+bool step_next;
+
 SDL_Scancode keymaps[16] = {
     SDL_SCANCODE_X, SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_3, 
     SDL_SCANCODE_Q, SDL_SCANCODE_W, SDL_SCANCODE_E, SDL_SCANCODE_A,
@@ -46,34 +49,42 @@ int init_display() {
 
 void sdl_ehandler(uint8_t *keypad) {
     SDL_Event event;
+    static uint8_t prev_keypad[16] = {0}; // Track previous state of keys
 
-    // if event executes code
     if (SDL_PollEvent(&event)) {
-        // check event type
         switch (event.type) {
             case SDL_QUIT:
                 printf("Quit Emulator\n");
                 quit_signal = 1;
                 break;
-
             case SDL_KEYDOWN:
                 for (int i = 0; i < 16; i++) {
-                    // Check if the pressed key matches one of the keymaps
                     if (event.key.keysym.scancode == keymaps[i]) {
-                        keypad[i] = 1;
+                        // Only register the press if it wasn't already pressed
+                        if (prev_keypad[i] == 0) {
+                            keypad[i] = 1;
+                            prev_keypad[i] = 1; // Update previous state
+                        }
                         break;
                     }
                 }
                 if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
                     quit_signal = 1;
                 }
+                if (event.key.keysym.scancode == SDL_SCANCODE_RETURN) {
+                    debugger_enabled = !debugger_enabled;
+                    step_next = 0;
+                }
+                if (event.key.keysym.scancode == SDL_SCANCODE_RSHIFT) {
+                    step_next = 1;    
+                }
                 break;
-
             case SDL_KEYUP:
                 for (int i = 0; i < 16; i++) {
-                    // Check if the released key matches one of the keymaps
                     if (event.key.keysym.scancode == keymaps[i]) {
+                        // Update states on key release
                         keypad[i] = 0;
+                        prev_keypad[i] = 0; // Reset previous state
                         break;
                     }
                 }

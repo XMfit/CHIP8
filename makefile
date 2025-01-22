@@ -7,7 +7,7 @@ all: bin/emulator
 
 bin/emulator: src/main.c src/chip8.c src/sdl_utils.c
 	@if [ ! -d bin ]; then mkdir bin; fi
-	$(CC) $(CFLAGS) $^ $(LDFLAGS) -DDEBUG=1 -o $@
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -DDEBUG=0 -o $@
 
 clean:
 	rm -rf bin/*

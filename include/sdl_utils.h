@@ -8,6 +8,7 @@
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_keyboard.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 extern int quit_signal;

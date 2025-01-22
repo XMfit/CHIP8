@@ -36,9 +36,8 @@ uint16_t sp;
 uint8_t df;
 uint8_t sf;
 
-uint8_t keypad[16]; 
+uint8_t keypad[16];
 uint8_t display[64 * 32]; 
-
 
 #ifndef DEBUG 
 #define DEBUG 0
@@ -53,8 +52,27 @@ void debug_ops(const char *fmt, ...) {
     }
 }
 
+const char *register_names[NUM_OF_REGISTERS] = {
+    "V0", "V1", "V2", "V3", "V4", "V5", "V6", "V7", 
+    "V8", "V9", "VA", "VB", "VC", "VD", "VE", "VF"
+};
+
+void print_registers() {
+    for (int i = 0; i < NUM_OF_REGISTERS; i++) {
+        printf("Register %s: %d\n", register_names[i], registers[i]);
+    }
+
+    printf("Special Registers\n");
+    printf("Register PC: %d\nRegister I: %d\n", pc, I);
+
+    printf("Timers\n");
+    printf("Delay Timer: %d\nSount Timer: %d\n", timer_registers[dt], timer_registers[st]);
+
+    printf("--------------------------------------\n");
+}
+
 void initChip(int flag) {
-    legacy_flag = flag; 
+    legacy_flag = flag;
     memset(memory, 0, sizeof(memory));
     memset(stack, 0, sizeof(stack));
     memset(registers, 0, sizeof(registers));
@@ -332,11 +350,23 @@ void emulation_cycle() {
                 case 0x0A:
                     // Fx0A LD registers[Vx], K
                     debug_ops("Opcode debug: 0x%X:\n", opcode);
-                    for (int i = 0; i < 16; i++) {
-                        if(keypad[i]) {
+
+                    static bool waiting_for_release = false; 
+                    static int pressed_key = -1;
+
+                    if (!waiting_for_release) {
+                        for (int i = 0; i < 16; i++) {
                             registers[Vx] = i;
+                            pressed_key = i;
+                            waiting_for_release = true;
+                            timer_registers[dt] -= 1; 
+                            return;
+                        }
+                    } else {
+                        if (!keypad[pressed_key]) {
+                            waiting_for_release = false;
+                            pressed_key = -1;
                             pc += 2;
-                            break;
                         }
                     }
                     break;

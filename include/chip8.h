@@ -8,7 +8,11 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+// Compiler flags 
 extern int legacy_flag;
+
+extern bool debugger_enabled;
+extern bool step_next;
 
 extern uint8_t memory[4096];
 extern uint16_t pc;
@@ -27,7 +31,7 @@ typedef enum {
     NUM_OF_REGISTERS
 } Registers;
 
-extern uint8_t registers[NUM_OF_REGISTERS]; // 16 8-bit registers
+extern uint8_t registers[NUM_OF_REGISTERS];          // 16 8-bit registers
 extern uint8_t timer_registers[NUM_OF_TIMERS];       // 2 8-bit timers
 
 // Stack: 16 two-byte entries. Stack may be limited or unlimited
@@ -48,6 +52,7 @@ extern uint8_t display[64 * 32];
 void initChip(int);
 int loadRom(char *);
 void emulation_cycle();
+void print_registers();
 
 #endif
 
