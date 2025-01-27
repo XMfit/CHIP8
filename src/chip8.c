@@ -39,6 +39,7 @@ uint8_t sf;
 uint8_t keypad[16];
 uint8_t display[64 * 32]; 
 
+
 #ifndef DEBUG 
 #define DEBUG 0
 #endif
@@ -58,17 +59,18 @@ const char *register_names[NUM_OF_REGISTERS] = {
 };
 
 void print_registers() {
+    printf("\033[1;37mRegisters:\033[0m\n");
     for (int i = 0; i < NUM_OF_REGISTERS; i++) {
-        printf("Register %s: %d\n", register_names[i], registers[i]);
+        printf("\033[1;36mRegister %s: \033[1;31m%d\033[0m\n", register_names[i], registers[i]);
     }
 
-    printf("Special Registers\n");
-    printf("Register PC: %d\nRegister I: %d\n", pc, I);
+    printf("\033[1;37mSpecial Registers:\033[0m\n");
+    printf("\033[1;36mRegister PC: \033[1;31m%d\n\033[1;36mRegister I: \033[1;31m%d\n", pc, I);
 
-    printf("Timers\n");
-    printf("Delay Timer: %d\nSount Timer: %d\n", timer_registers[dt], timer_registers[st]);
+    printf("\033[1;37mTimers:\033[0m\n");
+    printf("\033[1;36mDelay Timer:\033[0m \033[1;31m%d\n\033[1;36mSound Timer:\033[0m \033[1;31m%d\n", timer_registers[dt], timer_registers[st]);
 
-    printf("--------------------------------------\n");
+    printf("\033[1;37m--------------------------------------\033[0m\n");
 }
 
 void initChip(int flag) {

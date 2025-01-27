@@ -62,15 +62,15 @@ int main(int argc, char** argv) {
             sdl_draw(display);
 
         while (debugger_enabled) {
-            //print_registers();
             sdl_ehandler(keypad);
             if (step_next) {
+                print_registers();
                 step_next = 0;
                 break;
             }
         }
 
-        usleep(2000);
+        usleep(2500);
     }
 
     cleanup_sdl();
